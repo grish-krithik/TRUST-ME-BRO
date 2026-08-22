@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Zap } from 'lucide-react';
 
 const STATIONS = ['MAS', 'AJJ', 'KPD', 'SA', 'ED', 'CBE'];
-const SEGMENTS = [
-  { id: 'MAS-AJJ', start: 0, end: 1, type: 'double' },
-  { id: 'AJJ-KPD', start: 1, end: 2, type: 'single' },
-  { id: 'KPD-SA', start: 2, end: 3, type: 'double' },
-  { id: 'SA-ED', start: 3, end: 4, type: 'single' },
-  { id: 'ED-CBE', start: 4, end: 5, type: 'double' }
-];
 
 const COLOR_MAP = {
-  'Rajdhani/Vande Bharat': '#f43f5e', 
-  'Mail/Express': '#3b82f6', 
-  'Passenger': '#eab308', 
-  'Freight': '#94a3b8' 
+  'Rajdhani/Vande Bharat': '#ec4899', // Pink glow
+  'Mail/Express': '#3b82f6', // Blue glow
+  'Passenger': '#eab308', // Yellow
+  'Freight': '#10b981' // Green
+};
+
+const formatTime = (minutes) => {
+    const d = Math.floor(minutes / (24 * 60));
+    const h = Math.floor((minutes % (24 * 60)) / 60);
+    const m = Math.floor(minutes % 60);
+    let dayStr = d > 0 ? `+${d}d ` : '';
+    return `${dayStr}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
 
 export default function TrackDiagram({ schedule }) {
@@ -55,8 +56,8 @@ export default function TrackDiagram({ schedule }) {
 
   if (!schedule) return null;
 
-  const trackWidth = 900;
-  const padding = 60;
+  const trackWidth = 1000;
+  const padding = 80;
   const usableWidth = trackWidth - 2 * padding;
   const stationSpacing = usableWidth / (STATIONS.length - 1);
 
@@ -123,93 +124,136 @@ export default function TrackDiagram({ schedule }) {
     };
   }).filter(Boolean);
 
-  const formatTime = (minutes) => {
-    const d = Math.floor(minutes / (24 * 60));
-    const h = Math.floor((minutes % (24 * 60)) / 60);
-    const m = Math.floor(minutes % 60);
-    let dayStr = d > 0 ? `+${d}d ` : '';
-    return `${dayStr}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  // Generate track segments visually
+  const renderTrackLines = (yOffset, opacity = 1) => {
+    return (
+      <g opacity={opacity}>
+        <line x1={padding - 20} y1={yOffset - 2} x2={trackWidth - padding + 20} y2={yOffset - 2} stroke="#334155" strokeWidth={1} />
+        <line x1={padding - 20} y1={yOffset + 2} x2={trackWidth - padding + 20} y2={yOffset + 2} stroke="#334155" strokeWidth={1} />
+        {/* Sleepers */}
+        <line x1={padding - 20} y1={yOffset} x2={trackWidth - padding + 20} y2={yOffset} stroke="#1e293b" strokeWidth={6} strokeDasharray="2 6" />
+      </g>
+    );
+  };
+
+  const renderSiding = (cx, baseY, isUp) => {
+    const yTarget = isUp ? baseY - 20 : baseY + 20;
+    const xSpread = 40;
+    return (
+      <g opacity={0.6}>
+        <path 
+          d={`M ${cx - xSpread - 10} ${baseY} L ${cx - xSpread + 10} ${yTarget} L ${cx + xSpread - 10} ${yTarget} L ${cx + xSpread + 10} ${baseY}`}
+          fill="transparent" stroke="#334155" strokeWidth={2}
+        />
+        <path 
+          d={`M ${cx - xSpread - 10} ${baseY} L ${cx - xSpread + 10} ${yTarget} L ${cx + xSpread - 10} ${yTarget} L ${cx + xSpread + 10} ${baseY}`}
+          fill="transparent" stroke="#1e293b" strokeWidth={6} strokeDasharray="2 6"
+        />
+      </g>
+    );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
       
-      <div style={{ padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid #3b82f6', borderRadius: '4px', fontSize: '0.875rem' }}>
-        <strong>Historical Dispatch Insight:</strong> 
-        {activeTrains.some(t => t.isCoasting) 
-          ? " 🍃 Eco-Coasting Active: Based on historical delay databases, freight train instructed to lower speed early to prevent halting at next bottleneck." 
-          : " AI Predictive Dispatch online. Headways dynamically adjusted based on historical kinetic profiles."}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.5rem', background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%)', borderLeft: '4px solid #10b981', borderRadius: '8px', fontSize: '0.9rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        <Zap size={20} color="#10b981" />
+        <div>
+          <strong style={{ color: '#f8fafc', display: 'block', marginBottom: '2px' }}>NTES Real-Time Database Active (MAS-CBE Route)</strong>
+          <span style={{ color: '#94a3b8' }}>
+            {activeTrains.some(t => t.isCoasting) 
+              ? "Predictive Action: Slower freight shifted to siding line (Eco-Coasting) to clear UP/DOWN main line for high-priority express." 
+              : "100% Electrified Double-Line Section tracking live. Simulating daily schedule overtakes."}
+          </span>
+        </div>
       </div>
 
-      <div className="track-diagram-container" style={{ background: '#0f172a', padding: '1rem', borderRadius: '8px', border: '1px solid #1e293b' }}>
-        <svg viewBox={`0 0 ${trackWidth} 220`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+      <div className="track-diagram-container" style={{ background: 'linear-gradient(180deg, #020617 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '12px', border: '1px solid #1e293b', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)' }}>
+        <svg viewBox={`0 0 ${trackWidth} 260`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
           
-          {SEGMENTS.map((seg, i) => {
-            const startX = padding + seg.start * stationSpacing;
-            const endX = padding + seg.end * stationSpacing;
-            
-            if (seg.type === 'double') {
-              return (
-                <g key={i}>
-                  <line x1={startX} y1={100} x2={endX} y2={100} stroke="#334155" strokeWidth={3} />
-                  <line x1={startX} y1={120} x2={endX} y2={120} stroke="#334155" strokeWidth={3} />
-                </g>
-              );
-            } else {
-              return (
-                <line key={i} x1={startX} y1={110} x2={endX} y2={110} stroke="#f59e0b" strokeWidth={3} strokeDasharray="6 2" />
-              );
-            }
-          })}
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
 
+          {/* Render Main Double Lines (DOWN = 100, UP = 160) */}
+          {renderTrackLines(100)}
+          {renderTrackLines(160)}
+          
+          {/* Labels for lines */}
+          <text x={20} y={104} fill="#475569" fontSize={10} fontWeight="bold">DOWN LINE</text>
+          <text x={20} y={164} fill="#475569" fontSize={10} fontWeight="bold">UP LINE</text>
+
+          {/* Render Stations & Sidings */}
           {STATIONS.map((st, i) => {
             const cx = padding + i * stationSpacing;
-            const hasLoop = true;
             return (
               <g key={i}>
-                {hasLoop && (
-                  <path d={`M ${cx - 30} 100 Q ${cx} 60 ${cx + 30} 100`} fill="transparent" stroke="#475569" strokeWidth={2} />
-                )}
-                {hasLoop && (
-                  <path d={`M ${cx - 30} 120 Q ${cx} 160 ${cx + 30} 120`} fill="transparent" stroke="#475569" strokeWidth={2} />
-                )}
+                {/* UP & DOWN Loop Sidings */}
+                {renderSiding(cx, 100, true)}  {/* DOWN Loop */}
+                {renderSiding(cx, 160, false)} {/* UP Loop */}
                 
-                <rect x={cx - 10} y={96} width={20} height={28} fill="#1e293b" stroke="#94a3b8" strokeWidth={2} rx={2} />
-                <text x={cx} y={155} fill="#f8fafc" fontSize={14} fontWeight="bold" textAnchor="middle">{st}</text>
+                {/* Platform representation */}
+                <rect x={cx - 30} y={115} width={60} height={30} fill="#1e293b" stroke="#334155" strokeWidth={1} rx={4} />
+                <rect x={cx - 28} y={117} width={56} height={26} fill="#0f172a" rx={2} />
                 
-                <text x={cx} y={170} fill="#94a3b8" fontSize={10} textAnchor="middle">
+                <text x={cx} y={135} fill="#f8fafc" fontSize={14} fontWeight="bold" textAnchor="middle" letterSpacing="1">{st}</text>
+                
+                <text x={cx} y={205} fill="#94a3b8" fontSize={11} textAnchor="middle">
                   {st === 'MAS' ? 'Chennai Cntl' : 
                    st === 'AJJ' ? 'Arakkonam' :
                    st === 'KPD' ? 'Katpadi' :
                    st === 'SA' ? 'Salem' :
                    st === 'ED' ? 'Erode' : 'Coimbatore'}
                 </text>
+                
+                {/* Station Node Pulse */}
+                <circle cx={cx} cy={130} r={2} fill="#3b82f6" opacity={0.5} />
               </g>
             );
           })}
 
+          {/* Render Trains */}
           {activeTrains.map((t) => {
-            let y = 110; 
-            if (t.isDwelling) {
-               y = t.dir === 'right' ? 76 : 144;
+            // DOWN uses y=100 (main) or y=80 (siding)
+            // UP uses y=160 (main) or y=180 (siding)
+            let y = 100;
+            
+            if (t.dir === 'right') {
+                y = t.isDwelling ? 80 : 100;
             } else {
-               if (t.dir === 'right') y = 100;
-               if (t.dir === 'left') y = 120;
+                y = t.isDwelling ? 180 : 160;
             }
             
             return (
               <g key={t.id} transform={`translate(${t.pos}, ${y})`} style={{ transition: 'transform 0.1s linear' }}>
-                <rect x={-16} y={-8} width={32} height={16} fill={t.color} rx={4} />
-                <text y={-14} fontSize={11} fill={t.color} fontWeight="bold" textAnchor="middle">
+                <rect x={-20} y={-8} width={40} height={16} fill={t.color} rx={4} filter="url(#glow)" opacity={0.9} />
+                
+                {/* Train Window Detail */}
+                <rect x={-14} y={-4} width={28} height={8} fill="rgba(0,0,0,0.3)" rx={1} />
+                
+                <text y={-14} fontSize={10} fill={t.color} fontWeight="bold" textAnchor="middle" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
                   {t.id.split('-')[0]}
                 </text>
+                
+                {/* Direction Headlight */}
                 {t.dir === 'right' ? (
-                  <polygon points="-4,-4 4,0 -4,4" fill="#1e293b" />
+                  <circle cx={14} cy={0} r={2} fill="#fff" filter="url(#glow)" />
                 ) : (
-                  <polygon points="4,-4 -4,0 4,4" fill="#1e293b" />
+                  <circle cx={-14} cy={0} r={2} fill="#fff" filter="url(#glow)" />
                 )}
+                
+                {/* Eco Coasting Indicator */}
                 {t.isCoasting && (
-                   <circle cx={0} cy={-25} r={4} fill="#4ade80" className="animate-pulse" />
+                   <g transform="translate(0, -25)">
+                     <circle cx={0} cy={0} r={6} fill="#10b981" filter="url(#glow)" className="animate-pulse" />
+                     <text y={2} fontSize={8} fill="#fff" fontWeight="bold" textAnchor="middle">ECO</text>
+                   </g>
                 )}
               </g>
             );
@@ -217,20 +261,28 @@ export default function TrackDiagram({ schedule }) {
         </svg>
       </div>
 
-      <div className="playback-controls" style={{ background: '#1e293b', padding: '1rem', borderRadius: '8px' }}>
-        <button onClick={() => setIsPlaying(!isPlaying)} style={{ background: '#3b82f6', color: 'white', padding: '0.5rem', borderRadius: '50%', border: 'none', cursor: 'pointer' }}>
-          {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+      {/* Control Panel */}
+      <div className="playback-controls" style={{ background: '#0f172a', padding: '1.25rem', borderRadius: '12px', border: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>
+        <button 
+          onClick={() => setIsPlaying(!isPlaying)} 
+          style={{ background: isPlaying ? '#ef4444' : '#3b82f6', color: 'white', padding: '0.75rem', borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)', transition: 'all 0.2s' }}
+        >
+          {isPlaying ? <Pause size={24} /> : <Play size={24} />}
         </button>
+        
         <div className="time-scrubber" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="time-display" style={{ color: '#f8fafc', fontWeight: 'bold', width: '80px', fontFamily: 'monospace', fontSize: '1.1rem' }}>
-            {formatTime(time)}
-          </span>
+          <div style={{ background: '#1e293b', padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #334155' }}>
+            <span style={{ color: '#38bdf8', fontWeight: 'bold', fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '2px' }}>
+              {formatTime(time)}
+            </span>
+          </div>
+          
           <input 
             type="range" 
             min={minTimeRef.current} 
             max={maxTimeRef.current || 100} 
             value={time} 
-            style={{ flexGrow: 1 }}
+            style={{ flexGrow: 1, height: '6px', accentColor: '#3b82f6', background: '#334155', borderRadius: '3px', outline: 'none' }}
             onChange={(e) => {
               setTime(parseFloat(e.target.value));
               setIsPlaying(false);
