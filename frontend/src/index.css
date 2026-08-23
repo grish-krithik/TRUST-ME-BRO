@@ -1,31 +1,32 @@
 :root {
-  --bg-color: #020617;
-  --surface-color: #0f172a;
-  --surface-color-light: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --accent-color: #3b82f6;
-  --color-rajdhani: #ec4899;
-  --color-mail: #3b82f6;
-  --color-passenger: #eab308;
-  --color-freight: #10b981;
+  --bg-color: #0d1117;
+  --surface-color: #161b22;
+  --surface-color-light: #21262d;
+  --text-primary: #c9d1d9;
+  --text-secondary: #8b949e;
+  --border-color: #30363d;
+  --accent-color: #58a6ff;
+  
+  /* Indian Railways Signal Colors */
+  --color-signal-red: #ff4444;
+  --color-signal-amber: #ffbb33;
+  --color-signal-green: #00C851;
+  
+  /* Train Classes */
+  --color-rajdhani: #ff6b6b;
+  --color-mail: #4ecdc4;
+  --color-passenger: #feca57;
+  --color-freight: #95a5a6;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 .app-container {
   max-width: 1400px;
@@ -35,127 +36,103 @@ body {
 
 header {
   margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 1.5rem;
 }
 
 h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(to right, #3b82f6, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.05em;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-size: 1rem;
   margin-top: 0.5rem;
 }
 
-.panel {
+.card {
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
-.panel h2 {
+.card h2 {
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #f1f5f9;
+  color: #fff;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background-color: var(--surface-color-light);
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(to right, var(--accent-color), transparent);
-}
-
-.stat-label {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.stat-unit {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  font-weight: 400;
-  margin-left: 0.25rem;
-}
-
-.tabs {
+.mode-toggle {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  background: var(--surface-color);
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  width: fit-content;
+  margin-top: 1rem;
 }
 
-.tab {
-  background: transparent;
-  border: none;
+.mode-toggle button {
+  background: var(--surface-color-light);
+  border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.2s;
 }
 
-.tab:hover {
-  color: var(--text-primary);
-  background: rgba(255,255,255,0.05);
+.mode-toggle button.active {
+  background: var(--bg-color);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
-.tab.active {
-  background: var(--accent-color);
-  color: white;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
-/* Animations */
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.2); }
+th, td {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
 }
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+tbody tr:hover {
+  background: var(--surface-color-light);
+}
+
+.delay-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.delay-none { background: rgba(0,200,81,0.1); color: var(--color-signal-green); }
+.delay-minor { background: rgba(255,187,51,0.1); color: var(--color-signal-amber); }
+.delay-major { background: rgba(255,68,68,0.1); color: var(--color-signal-red); }
+
+.bottleneck-label {
+  background: rgba(255,187,51,0.2);
+  color: var(--color-signal-amber);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(255,187,51,0.5);
 }

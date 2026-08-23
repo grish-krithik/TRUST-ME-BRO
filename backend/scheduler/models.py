@@ -1,13 +1,13 @@
 """
 Domain models for the railway section scheduling problem.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import List, Dict
 
 class Direction(Enum):
-    RIGHT = "right"  # A → F
-    LEFT = "left"    # F → A
+    RIGHT = "right"  # MAS → CBE (DOWN)
+    LEFT = "left"    # CBE → MAS (UP)
 
 class TrainClass(Enum):
     RAJDHANI     = ("Rajdhani/Vande Bharat", 5)
@@ -22,6 +22,7 @@ class TrainClass(Enum):
 @dataclass
 class Station:
     name: str
+    distance_km: int = 0
     has_loop_line: bool = False
     loop_capacity: int = 0
 
@@ -80,7 +81,6 @@ class TrainSchedule:
     scheduled_finish: int
     actual_finish: int
     delay: int
-    eco_coasting_minutes: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -91,8 +91,7 @@ class TrainSchedule:
             "segments": [s.to_dict() for s in self.segments],
             "scheduled_finish": self.scheduled_finish,
             "actual_finish": self.actual_finish,
-            "delay": self.delay,
-            "eco_coasting_minutes": self.eco_coasting_minutes
+            "delay": self.delay
         }
 
 @dataclass
@@ -102,8 +101,6 @@ class ScheduleSummary:
     throughput_trains_per_hour: float
     per_class_avg_delay: Dict[str, float]
     solve_time_seconds: float = 0.0
-    diesel_saved_liters: float = 0.0
-    financial_savings_inr: float = 0.0
 
     def to_dict(self) -> dict:
         return {
@@ -112,8 +109,6 @@ class ScheduleSummary:
             "throughput_trains_per_hour": self.throughput_trains_per_hour,
             "per_class_avg_delay": self.per_class_avg_delay,
             "solve_time_seconds": self.solve_time_seconds,
-            "diesel_saved_liters": self.diesel_saved_liters,
-            "financial_savings_inr": self.financial_savings_inr,
         }
 
 @dataclass
@@ -146,16 +141,10 @@ def compute_summary(schedules: List[TrainSchedule], solve_time: float = 0.0) -> 
         for cls, delays in class_delays.items()
     }
 
-    total_coasting_mins = sum(s.eco_coasting_minutes for s in schedules)
-    diesel_saved = total_coasting_mins * 3.5  
-    financial_savings = diesel_saved * 90.0
-
     return ScheduleSummary(
         total_weighted_delay=total_weighted_delay,
         total_raw_delay=total_raw_delay,
         throughput_trains_per_hour=round(throughput, 2),
         per_class_avg_delay=per_class_avg,
-        solve_time_seconds=round(solve_time, 3),
-        diesel_saved_liters=round(diesel_saved, 1),
-        financial_savings_inr=round(financial_savings, 2)
+        solve_time_seconds=round(solve_time, 3)
     )

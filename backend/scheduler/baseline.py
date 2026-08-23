@@ -9,7 +9,7 @@ from .models import (
     SegmentSchedule, compute_summary,
 )
 from .topology import (
-    TRAINS, SEGMENTS, STATIONS, STATION_MAP, HEADWAY_MINUTES,
+    TRAINS, SEGMENTS, STATIONS, HEADWAY_MINUTES,
     get_train_segments, get_train_station_order,
 )
 
@@ -97,7 +97,7 @@ def solve_baseline() -> ScheduleResult:
             if seg.is_single_line:
                 track_id = seg.name
             else:
-                track_id = seg.name + "_UP" if train.direction.value == "right" else seg.name + "_DOWN"
+                track_id = seg.name + "_UP" if train.direction.value == "left" else seg.name + "_DOWN"
 
             entry_time = segment_occupancy[track_id].earliest_feasible_entry(current_time, duration)
 
@@ -125,8 +125,7 @@ def solve_baseline() -> ScheduleResult:
             segments=seg_schedules,
             scheduled_finish=train.ideal_finish_time,
             actual_finish=actual_finish,
-            delay=max(0, actual_finish - train.ideal_finish_time),
-            eco_coasting_minutes=0
+            delay=max(0, actual_finish - train.ideal_finish_time)
         ))
 
     solve_duration = time.time() - start_time

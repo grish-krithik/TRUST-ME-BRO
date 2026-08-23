@@ -1,66 +1,78 @@
 import React from 'react';
-import { Clock, TrendingUp, TrendingDown, Leaf, IndianRupee } from 'lucide-react';
+
+function formatTime(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
 
 export default function StatsPanel({ compare, mode }) {
-  // compare comes from /compare endpoint: { improvement, baseline_summary, optimized_summary }
-  const currentData = mode === 'optimized' ? compare.optimized_summary : compare.baseline_summary;
+  const currentResult = mode === 'optimized' ? compare.optimized : compare.baseline;
   const improvement = compare.improvement;
 
+  const trains = currentResult.trains.sort((a, b) => a.actual_finish - b.actual_finish);
+
   return (
-    <section className="stats-grid">
-      <div className="stat-card highlight">
-        <div className="stat-header">
-          <Clock size={20} className="icon" />
-          <h3>Total Weighted Delay</h3>
-        </div>
-        <div className="stat-value">{currentData.total_weighted_delay} <span className="stat-unit">mins</span></div>
-        {mode === 'optimized' && (
-          <div className="stat-delta positive">
-            <TrendingDown size={14} /> 
-            Reduced by {improvement.weighted_delay_reduction_pct}%
+    <div className="panel">
+      <h2>Section Performance Summary {mode === 'optimized' ? '(AI CP-SAT)' : '(FCFS Baseline)'}</h2>
+      
+      {mode === 'optimized' && (
+        <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', padding: '1rem', background: 'rgba(88, 166, 255, 0.1)', border: '1px solid var(--accent-color)', borderRadius: '6px' }}>
+          <div>
+            <div className="subtitle">Weighted Delay Reduction</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-signal-green)' }}>
+              {improvement.weighted_delay_reduction_pct}% (↓ {improvement.weighted_delay_reduction} score)
+            </div>
           </div>
-        )}
-      </div>
-
-      <div className="stat-card">
-        <div className="stat-header">
-          <TrendingUp size={20} className="icon" />
-          <h3>Throughput (Capacity)</h3>
-        </div>
-        <div className="stat-value">{currentData.throughput_trains_per_hour} <span className="stat-unit">trains/hr</span></div>
-        {mode === 'optimized' && (
-          <div className="stat-delta positive">
-            <TrendingUp size={14} /> 
-            Kavach physics enabled
+          <div>
+            <div className="subtitle">Bottleneck Throughput</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>
+              +{improvement.throughput_increase_pct}% (↑ {improvement.throughput_increase} trains/hr)
+            </div>
           </div>
-        )}
-      </div>
+          <div>
+            <div className="subtitle">Solve Time</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+              {compare.optimized.summary.solve_time_seconds.toFixed(3)}s
+            </div>
+          </div>
+        </div>
+      )}
 
-      <div className="stat-card">
-        <div className="stat-header">
-          <Leaf size={20} className="icon" style={{color: '#4ade80'}} />
-          <h3>Eco-Coasting Savings</h3>
-        </div>
-        <div className="stat-value" style={{color: '#4ade80'}}>
-          {mode === 'optimized' ? currentData.diesel_saved_liters.toLocaleString() : '0'} <span className="stat-unit">Liters</span>
-        </div>
-        <div className="stat-delta">
-          Diesel saved from smart braking
-        </div>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Train</th>
+            <th>Class</th>
+            <th>Dir</th>
+            <th>Scheduled Arr</th>
+            <th>Actual Arr</th>
+            <th>Delay</th>
+          </tr>
+        </thead>
+        <tbody>
+          {trains.map(t => {
+            let delayClass = 'delay-none';
+            if (t.delay > 15) delayClass = 'delay-major';
+            else if (t.delay > 0) delayClass = 'delay-minor';
 
-      <div className="stat-card highlight-rupee" style={{borderColor: '#fbbf24', background: 'rgba(251, 191, 36, 0.05)'}}>
-        <div className="stat-header">
-          <IndianRupee size={20} className="icon" style={{color: '#fbbf24'}}/>
-          <h3 style={{color: '#fbbf24'}}>Net Financial Savings</h3>
-        </div>
-        <div className="stat-value" style={{color: '#fbbf24'}}>
-          ₹ {mode === 'optimized' ? currentData.financial_savings_inr.toLocaleString() : '0'}
-        </div>
-        <div className="stat-delta">
-          Fuel + Delay Cost Recovered
-        </div>
-      </div>
-    </section>
+            return (
+              <tr key={t.id}>
+                <td style={{ fontWeight: 600 }}>{t.id}</td>
+                <td>{t.class}</td>
+                <td>{t.direction === 'right' ? 'MAS→CBE' : 'CBE→MAS'}</td>
+                <td>{formatTime(t.scheduled_finish)}</td>
+                <td>{formatTime(t.actual_finish)}</td>
+                <td>
+                  <span className={`delay-badge ${delayClass}`}>
+                    {t.delay === 0 ? 'On Time' : `+${t.delay}m`}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

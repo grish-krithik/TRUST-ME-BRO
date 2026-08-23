@@ -24,9 +24,7 @@ def compare_schedules() -> dict:
         ),
         "throughput_increase_pct": round(
             (optimized.summary.throughput_trains_per_hour / base_tp - 1) * 100, 1
-        ),
-        "diesel_saved_liters": optimized.summary.diesel_saved_liters,
-        "financial_savings_inr": optimized.summary.financial_savings_inr
+        )
     }
 
     return {

@@ -1,10 +1,10 @@
 import React from 'react';
 
 const COLOR_MAP = {
-  'Rajdhani/Vande Bharat': '#f43f5e', 
-  'Mail/Express': '#3b82f6', 
-  'Passenger': '#eab308', 
-  'Freight': '#94a3b8' 
+  'Rajdhani/Vande Bharat': 'var(--color-rajdhani)', 
+  'Mail/Express': 'var(--color-mail)', 
+  'Passenger': 'var(--color-passenger)', 
+  'Freight': 'var(--color-freight)' 
 };
 
 const formatTime = (minutes) => {
@@ -37,7 +37,7 @@ export default function GanttChart({ schedule }) {
         {/* Header / Time Axis */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
           <div style={{ width: '150px', flexShrink: 0, fontWeight: 600 }}>Train ID</div>
-          <div style={{ width: '80px', flexShrink: 0, fontWeight: 600 }}>Ideal</div>
+          <div style={{ width: '80px', flexShrink: 0, fontWeight: 600 }}>Sched Arr</div>
           <div style={{ position: 'relative', flexGrow: 1 }}>
             {/* Tick marks every 60 mins */}
             {Array.from({ length: Math.ceil(horizon / 60) + 1 }).map((_, i) => (
@@ -58,21 +58,21 @@ export default function GanttChart({ schedule }) {
         {/* Train Rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {sortedTrains.map(train => {
-            const color = COLOR_MAP[train.train_class] || 'var(--text-primary)';
+            const color = COLOR_MAP[train.class] || 'var(--text-primary)';
             
             return (
-              <div key={train.train_id} style={{ display: 'flex', alignItems: 'center', position: 'relative', height: '2.5rem' }}>
+              <div key={train.id} style={{ display: 'flex', alignItems: 'center', position: 'relative', height: '2.5rem' }}>
                 {/* Labels */}
                 <div style={{ width: '150px', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
-                  {train.train_id.split('-')[0]} {train.train_class.split('/')[0]}
+                  {train.id}
                 </div>
                 <div style={{ width: '80px', flexShrink: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   {formatTime(train.scheduled_finish)}
                 </div>
 
                 {/* Timeline */}
-                <div style={{ position: 'relative', flexGrow: 1, height: '100%', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '0.25rem' }}>
+                <div style={{ position: 'relative', flexGrow: 1, height: '100%', backgroundColor: 'var(--surface-color-light)', borderRadius: '0.25rem' }}>
                   
                   {Array.from({ length: Math.ceil(horizon / 60) + 1 }).map((_, i) => (
                     <div 
@@ -147,8 +147,8 @@ export default function GanttChart({ schedule }) {
                         width: `${((train.actual_finish - train.scheduled_finish) / horizon) * 100}%`,
                         top: '50%',
                         height: '2px',
-                        backgroundColor: '#ef4444',
-                        opacity: 0.6,
+                        backgroundColor: 'var(--color-signal-red)',
+                        opacity: 1,
                         zIndex: 0
                       }}
                     />

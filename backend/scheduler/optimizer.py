@@ -5,19 +5,14 @@ from .models import (
     SegmentSchedule, compute_summary, TrainClass
 )
 from .topology import (
-    TRAINS, SEGMENTS, STATIONS, STATION_MAP,
-    get_train_segments, get_train_station_order,
+    TRAINS, SEGMENTS, STATIONS, get_train_segments, get_train_station_order
 )
 from typing import Dict, List
 
-def get_dynamic_headway(train_class: TrainClass) -> int:
+def get_dynamic_headway() -> int:
     """
-    PHYSICS-AWARE DYNAMIC HEADWAYS (Kavach Moving Block)
+    Fixed 5-min headway as requested.
     """
-    if train_class == TrainClass.RAJDHANI:
-        return 3
-    elif train_class == TrainClass.FREIGHT:
-        return 7
     return 5
 
 def solve_optimized() -> ScheduleResult:
@@ -54,14 +49,16 @@ def solve_optimized() -> ScheduleResult:
         first_seg = segments[0]
         model.add(entry_vars[train.id][first_seg.name] >= train.entry_time)
 
-    # Constraint 4: Kavach Dynamic Headway & Exclusion
+    # Constraint 4: Exclusion & Headway
+    # Single-line bottleneck (ED->TUP, TUP->CBE): all trains share tracks
+    # Double-line: UP/DOWN trains separated
     for seg in SEGMENTS:
         if seg.is_single_line:
             track_groups = {"single": TRAINS}
         else:
             track_groups = {
-                "UP": [t for t in TRAINS if t.direction.value == "right"],
-                "DOWN": [t for t in TRAINS if t.direction.value == "left"]
+                "UP": [t for t in TRAINS if t.direction.value == "left"],
+                "DOWN": [t for t in TRAINS if t.direction.value == "right"]
             }
             
         for track_name, trains_in_track in track_groups.items():
@@ -75,7 +72,7 @@ def solve_optimized() -> ScheduleResult:
                 duration = train.segment_durations[j]
                 entry = entry_vars[train.id][seg.name]
                 
-                headway = get_dynamic_headway(train.train_class)
+                headway = get_dynamic_headway()
                 padded_duration = duration + headway
                 
                 padded_end = model.new_int_var(0, HORIZON + 15, f"padded_exit_{train.id}_{seg.name}_{track_name}")
@@ -86,7 +83,7 @@ def solve_optimized() -> ScheduleResult:
             if len(padded_intervals) > 1:
                 model.add_no_overlap(padded_intervals)
 
-    # Constraint 5: Loop line capacity
+    # Constraint 5: Loop line capacity at junctions
     station_dwell_intervals: Dict[str, list] = {s.name: [] for s in STATIONS}
     station_dwell_demands:   Dict[str, list] = {s.name: [] for s in STATIONS}
 
@@ -119,6 +116,7 @@ def solve_optimized() -> ScheduleResult:
         delay_vars.append(delay)
         delay_weights.append(train.weight)
 
+    # Objective is priority-weighted delay, not makespan.
     model.minimize(cp_model.LinearExpr.weighted_sum(delay_vars, delay_weights))
 
     # SOLVE
@@ -137,18 +135,11 @@ def solve_optimized() -> ScheduleResult:
     for i, train in enumerate(TRAINS):
         segments = get_train_segments(train)
         seg_schedules = []
-        eco_coasting = 0
         
         for j, seg in enumerate(segments):
             entry = solver.value(entry_vars[train.id][seg.name])
             exit_time = solver.value(exit_vars[train.id][seg.name])
             seg_schedules.append(SegmentSchedule(segment_name=seg.name, entry_time=entry, exit_time=exit_time))
-            
-            if j > 0:
-                prev_exit = solver.value(exit_vars[train.id][segments[j-1].name])
-                dwell = entry - prev_exit
-                if dwell > 0:
-                    eco_coasting += dwell
 
         actual_finish = seg_schedules[-1].exit_time
         train_schedules.append(TrainSchedule(
@@ -159,8 +150,7 @@ def solve_optimized() -> ScheduleResult:
             segments=seg_schedules,
             scheduled_finish=train.ideal_finish_time,
             actual_finish=actual_finish,
-            delay=max(0, actual_finish - train.ideal_finish_time),
-            eco_coasting_minutes=eco_coasting
+            delay=max(0, actual_finish - train.ideal_finish_time)
         ))
 
     summary = compute_summary(train_schedules, solve_duration)
