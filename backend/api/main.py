@@ -8,7 +8,7 @@ app = FastAPI(title="SIH25022 Train Scheduler API")
 # Enable CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite default port
+    allow_origins=["*"],  # Allow all origins for hackathon deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
