@@ -90,13 +90,17 @@ export default function TrackDiagram({ schedule }) {
         let startStn = STATIONS.find(s => s.code === startCode);
         let endStn = STATIONS.find(s => s.code === endCode);
 
-        // Map segment order correctly regardless of train direction string
-        // The segments array is strictly chronologically ordered
-        const startX = getStationX(startStn.km);
-        const endX = getStationX(endStn.km);
-        
-        currentPos = startX + (endX - startX) * progress;
-        lastCrossed = startStn.name;
+        if (startStn && endStn) {
+          // Segment names are canonical (low-km -> high-km, e.g. "TUP-CBE").
+          // DOWN (right) trains traverse start->end; UP (left) trains
+          // physically traverse the same segment end->start.
+          const fromStn = direction === 'left' ? endStn : startStn;
+          const toStn = direction === 'left' ? startStn : endStn;
+          const fromX = getStationX(fromStn.km);
+          const toX = getStationX(toStn.km);
+          currentPos = fromX + (toX - fromX) * progress;
+          lastCrossed = fromStn.name;
+        }
         break;
       }
     }
@@ -115,8 +119,10 @@ export default function TrackDiagram({ schedule }) {
           const stnCode = s1.find(s => s2.includes(s));
           const stn = STATIONS.find(s => s.code === stnCode);
           
-          currentPos = getStationX(stn.km);
-          lastCrossed = stn.name;
+          if (stn) {
+            currentPos = getStationX(stn.km);
+            lastCrossed = stn.name;
+          }
           break;
         }
       }
@@ -125,10 +131,10 @@ export default function TrackDiagram({ schedule }) {
     if (!isActive) return null;
 
     return {
-      id: train.id,
-      class: train.class,
+      train_id: train.train_id,
+      train_class: train.train_class,
       pos: currentPos,
-      color: COLOR_MAP[train.class] || '#fff',
+      color: COLOR_MAP[train.train_class] || '#fff',
       dir: direction,
       isDwelling,
       delay: train.delay,
@@ -137,23 +143,18 @@ export default function TrackDiagram({ schedule }) {
   }).filter(Boolean);
 
   const renderTrackLines = () => {
-    // Double line from MAS (0) to ED (396km)
     const edX = getStationX(396);
-    // Single line from ED (396km) to CBE (497km)
     
     return (
       <g>
-        {/* MAS to ED Double Line */}
         <line x1={padding} y1={100} x2={edX} y2={100} stroke="var(--border-color)" strokeWidth={3} />
         <line x1={padding} y1={140} x2={edX} y2={140} stroke="var(--border-color)" strokeWidth={3} />
         <text x={padding} y={92} fill="var(--text-secondary)" fontSize={10} fontWeight="bold">DOWN LINE</text>
         <text x={padding} y={154} fill="var(--text-secondary)" fontSize={10} fontWeight="bold">UP LINE</text>
 
-        {/* ED to CBE Single Line (Bottleneck) */}
         <line x1={edX} y1={120} x2={trackWidth - padding} y2={120} stroke="var(--color-signal-amber)" strokeWidth={4} />
         <text x={edX + 10} y={112} fill="var(--color-signal-amber)" fontSize={10} fontWeight="bold">BOTTLENECK (SINGLE LINE)</text>
         
-        {/* Track Junction Connectors at ED */}
         <line x1={edX - 20} y1={100} x2={edX} y2={120} stroke="var(--border-color)" strokeWidth={3} />
         <line x1={edX - 20} y1={140} x2={edX} y2={120} stroke="var(--border-color)" strokeWidth={3} />
       </g>
@@ -178,13 +179,10 @@ export default function TrackDiagram({ schedule }) {
           
           {renderTrackLines()}
 
-          {/* Render Stations */}
           {STATIONS.map((st) => {
             const cx = getStationX(st.km);
-            const isSingle = st.km > 396; // After Erode
-            
-            // Draw platforms
-            const platY = isSingle ? 120 : 120; // Center between UP/DOWN
+            const isSingle = st.km > 396;
+            const platY = isSingle ? 120 : 120;
             
             return (
               <g key={st.code}>
@@ -196,23 +194,20 @@ export default function TrackDiagram({ schedule }) {
             );
           })}
 
-          {/* Render Trains */}
           {activeTrains.map((t) => {
-            // DOWN uses y=100. UP uses y=140. Single line uses y=120.
             let y = 120;
             const isSingle = t.pos > getStationX(396);
             if (!isSingle) {
                 y = t.dir === 'right' ? 100 : 140;
             }
             
-            // Adjust if dwelling on a loop line (siding)
             if (t.isDwelling) {
                y = t.dir === 'right' ? y - 15 : y + 15;
             }
             
             return (
               <g 
-                key={t.id} 
+                key={t.train_id} 
                 transform={`translate(${t.pos}, ${y})`} 
                 style={{ transition: 'transform 0.1s linear', cursor: 'pointer' }}
                 onMouseEnter={() => setHoverTrain(t)}
@@ -220,14 +215,13 @@ export default function TrackDiagram({ schedule }) {
               >
                 <circle cx={0} cy={0} r={6} fill={t.color} stroke="#000" strokeWidth={2} />
                 <text y={-10} fontSize={10} fill={t.color} fontWeight="bold" textAnchor="middle">
-                  {t.id.split('-')[0]}
+                  {t.train_id.split('-')[0]}
                 </text>
               </g>
             );
           })}
         </svg>
 
-        {/* Hover Tooltip */}
         {hoverTrain && (
           <div style={{
             position: 'absolute',
@@ -241,9 +235,9 @@ export default function TrackDiagram({ schedule }) {
             zIndex: 10,
             minWidth: '200px'
           }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: hoverTrain.color }}>{hoverTrain.id}</h4>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: hoverTrain.color }}>{hoverTrain.train_id}</h4>
             <div style={{ fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div>Class: <strong>{hoverTrain.class}</strong></div>
+              <div>Class: <strong>{hoverTrain.train_class}</strong></div>
               <div>Last Station: <strong>{hoverTrain.lastCrossed}</strong></div>
               <div>Delay: <strong style={{ color: hoverTrain.delay > 0 ? 'var(--color-signal-red)' : 'var(--color-signal-green)' }}>{hoverTrain.delay} mins</strong></div>
             </div>
@@ -251,7 +245,6 @@ export default function TrackDiagram({ schedule }) {
         )}
       </div>
 
-      {/* Control Panel */}
       <div style={{ background: 'var(--surface-color)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button 
           onClick={() => setIsPlaying(!isPlaying)} 
@@ -261,7 +254,7 @@ export default function TrackDiagram({ schedule }) {
         </button>
         
         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: 'var(--bg-color)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+          <div style={{ background: 'var(--bg-color)', padding: '0.25rem .75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
             <span style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontFamily: 'monospace' }}>
               {formatTime(time)}
             </span>

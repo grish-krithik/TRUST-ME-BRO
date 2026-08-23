@@ -6,11 +6,11 @@ function formatTime(mins) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
-export default function StatsPanel({ compare, mode }) {
-  const currentResult = mode === 'optimized' ? compare.optimized : compare.baseline;
+export default function StatsPanel({ currentSchedule, compare, mode }) {
   const improvement = compare.improvement;
+  const currentSummary = mode === 'optimized' ? compare.optimized_summary : compare.baseline_summary;
 
-  const trains = currentResult.trains.sort((a, b) => a.actual_finish - b.actual_finish);
+  const trains = [...currentSchedule.trains].sort((a, b) => a.actual_finish - b.actual_finish);
 
   return (
     <div className="panel">
@@ -33,7 +33,7 @@ export default function StatsPanel({ compare, mode }) {
           <div>
             <div className="subtitle">Solve Time</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-              {compare.optimized.summary.solve_time_seconds.toFixed(3)}s
+              {currentSummary.solve_time_seconds.toFixed(3)}s
             </div>
           </div>
         </div>
@@ -57,9 +57,9 @@ export default function StatsPanel({ compare, mode }) {
             else if (t.delay > 0) delayClass = 'delay-minor';
 
             return (
-              <tr key={t.id}>
-                <td style={{ fontWeight: 600 }}>{t.id}</td>
-                <td>{t.class}</td>
+              <tr key={t.train_id}>
+                <td style={{ fontWeight: 600 }}>{t.train_id}</td>
+                <td>{t.train_class}</td>
                 <td>{t.direction === 'right' ? 'MAS→CBE' : 'CBE→MAS'}</td>
                 <td>{formatTime(t.scheduled_finish)}</td>
                 <td>{formatTime(t.actual_finish)}</td>

@@ -58,14 +58,14 @@ export default function GanttChart({ schedule }) {
         {/* Train Rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {sortedTrains.map(train => {
-            const color = COLOR_MAP[train.class] || 'var(--text-primary)';
+            const color = COLOR_MAP[train.train_class] || 'var(--text-primary)';
             
             return (
-              <div key={train.id} style={{ display: 'flex', alignItems: 'center', position: 'relative', height: '2.5rem' }}>
+              <div key={train.train_id} style={{ display: 'flex', alignItems: 'center', position: 'relative', height: '2.5rem' }}>
                 {/* Labels */}
                 <div style={{ width: '150px', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
-                  {train.id}
+                  {train.train_id}
                 </div>
                 <div style={{ width: '80px', flexShrink: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   {formatTime(train.scheduled_finish)}
