@@ -11,6 +11,9 @@ const STATIONS = [
   { code: 'CBE', name: 'Coimbatore', km: 497 }
 ];
 
+const STATION_MAP = {};
+STATIONS.forEach(s => { STATION_MAP[s.code] = s; });
+
 const TOTAL_KM = 497;
 
 const COLOR_MAP = {
@@ -91,10 +94,10 @@ export default function TrackDiagram({ schedule }) {
         isActive = true;
         const progress = (time - seg.entry_time) / (seg.exit_time - seg.entry_time);
         
-        const [startCode, endCode] = seg.segment_name.split('-');
+          const [startCode, endCode] = seg.segment_name.split('-');
         
-        let startStn = STATIONS.find(s => s.code === startCode);
-        let endStn = STATIONS.find(s => s.code === endCode);
+        let startStn = STATION_MAP[startCode];
+        let endStn = STATION_MAP[endCode];
 
         if (startStn && endStn) {
           // Segment names are canonical (low-km -> high-km, e.g. "TUP-CBE").
@@ -123,7 +126,7 @@ export default function TrackDiagram({ schedule }) {
           const s1 = seg1.segment_name.split('-');
           const s2 = seg2.segment_name.split('-');
           const stnCode = s1.find(s => s2.includes(s));
-          const stn = STATIONS.find(s => s.code === stnCode);
+          const stn = STATION_MAP[stnCode];
           
           if (stn) {
             currentPos = getStationX(stn.km);
