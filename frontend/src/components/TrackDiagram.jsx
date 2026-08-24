@@ -50,14 +50,20 @@ export default function TrackDiagram({ schedule }) {
 
   useEffect(() => {
     if (isPlaying) {
-      const animate = () => {
-        setTime(t => {
-          if (t >= maxTimeRef.current) {
-            setIsPlaying(false);
-            return maxTimeRef.current;
-          }
-          return t + speedScale;
-        });
+      let lastPaint = performance.now();
+      const animate = (now) => {
+        // Cap the animation to ~30 FPS (update every 33 milliseconds)
+        // This stops high-refresh-rate laptops from freezing React
+        if (now - lastPaint > 33) {
+          setTime(t => {
+            if (t >= maxTimeRef.current) {
+              setIsPlaying(false);
+              return maxTimeRef.current;
+            }
+            return t + speedScale;
+          });
+          lastPaint = now;
+        }
         reqRef.current = requestAnimationFrame(animate);
       };
       reqRef.current = requestAnimationFrame(animate);
@@ -245,16 +251,17 @@ export default function TrackDiagram({ schedule }) {
         )}
       </div>
 
-      <div style={{ background: 'var(--surface-color)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ background: 'var(--surface-color)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button 
+          type="button"
           onClick={() => setIsPlaying(!isPlaying)} 
-          style={{ background: isPlaying ? 'var(--color-signal-red)' : 'var(--accent-color)', color: 'white', padding: '0.5rem', borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ background: isPlaying ? 'var(--color-signal-red)' : 'var(--accent-color)', color: 'white', padding: '0.5rem', borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 10 }}
         >
-          {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+          {isPlaying ? <Pause size={20} style={{ pointerEvents: 'none' }} /> : <Play size={20} style={{ pointerEvents: 'none' }} />}
         </button>
         
         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: 'var(--bg-color)', padding: '0.25rem .75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+          <div style={{ background: 'var(--bg-color)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', width: '130px', textAlign: 'center', flexShrink: 0 }}>
             <span style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontFamily: 'monospace' }}>
               {formatTime(time)}
             </span>
